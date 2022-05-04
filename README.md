@@ -23,7 +23,7 @@ cp -r lib/\* /usr/local/lib<br>
 After any changes in tools/Example execute make.<br>
 
 <br>
-To compare CHA and SFS result:<br>
+To get detailed analysis of CHA and VSFS:<br>
 execute:<br>
 bin/svf-ex /path/to/bitcode/file<br>
 <h2>Citations:</h2> 
