@@ -1,52 +1,26 @@
-//===- svf-ex.cpp -- A driver example of SVF-------------------------------------//
-//
-//                     SVF: Static Value-Flow Analysis
-//
-// Copyright (C) <2013->  <Yulei Sui>
-//
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-//===-----------------------------------------------------------------------===//
-
-/*
- // A driver program of SVF including usages of SVF APIs
- //
- // Author: Yulei Sui,
- */
-
-#include "SVF-FE/LLVMUtil.h"
 #include "Graphs/SVFG.h"
-#include "WPA/Andersen.h"
+#include "SVF-FE/LLVMUtil.h"
 #include "SVF-FE/SVFIRBuilder.h"
 #include "Util/Options.h"
+#include "WPA/Andersen.h"
+#include "WPA/TypeAnalysis.h"
+#include <iostream>
 
 using namespace llvm;
 using namespace std;
 using namespace SVF;
 
+static llvm::cl::opt<std::string> InputFilename(cl::Positional,
+    llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 /*!
  * An example to query alias results of two LLVM values
  */
-SVF::AliasResult aliasQuery(PointerAnalysis* pta, Value* v1, Value* v2)
+AliasResult aliasQuery(PointerAnalysis* pta, Value* v1, Value* v2)
 {
-    return pta->alias(v1,v2);
+    return pta->alias(v1, v2);
 }
 
-/*!
- * An example to print points-to set of an LLVM value
- */
 std::string printPts(PointerAnalysis* pta, Value* val)
 {
 
@@ -56,24 +30,17 @@ std::string printPts(PointerAnalysis* pta, Value* val)
     NodeID pNodeId = pta->getPAG()->getValueNode(val);
     const PointsTo& pts = pta->getPts(pNodeId);
     for (PointsTo::iterator ii = pts.begin(), ie = pts.end();
-            ii != ie; ii++)
-    {
+         ii != ie; ii++) {
         rawstr << " " << *ii << " ";
         PAGNode* targetObj = pta->getPAG()->getGNode(*ii);
-        if(targetObj->hasValue())
-        {
-            rawstr << "(" <<*targetObj->getValue() << ")\t ";
+        if (targetObj->hasValue()) {
+            rawstr << "(" << *targetObj->getValue() << ")\t ";
         }
     }
 
     return rawstr.str();
-
 }
 
-
-/*!
- * An example to query/collect all successor nodes from a ICFGNode (iNode) along control-flow graph (ICFG)
- */
 void traverseOnICFG(ICFG* icfg, const Instruction* inst)
 {
     ICFGNode* iNode = icfg->getICFGNode(inst);
@@ -81,17 +48,12 @@ void traverseOnICFG(ICFG* icfg, const Instruction* inst)
     Set<const ICFGNode*> visited;
     worklist.push(iNode);
 
-    /// Traverse along VFG
-    while (!worklist.empty())
-    {
+    while (!worklist.empty()) {
         const ICFGNode* vNode = worklist.pop();
-        for (ICFGNode::const_iterator it = vNode->OutEdgeBegin(), eit =
-                    vNode->OutEdgeEnd(); it != eit; ++it)
-        {
+        for (ICFGNode::const_iterator it = iNode->OutEdgeBegin(), eit = iNode->OutEdgeEnd(); it != eit; ++it) {
             ICFGEdge* edge = *it;
             ICFGNode* succNode = edge->getDstNode();
-            if (visited.find(succNode) == visited.end())
-            {
+            if (visited.find(succNode) == visited.end()) {
                 visited.insert(succNode);
                 worklist.push(succNode);
             }
@@ -99,9 +61,6 @@ void traverseOnICFG(ICFG* icfg, const Instruction* inst)
     }
 }
 
-/*!
- * An example to query/collect all the uses of a definition of a value along value-flow graph (VFG)
- */
 void traverseOnVFG(const SVFG* vfg, Value* val)
 {
     SVFIR* pag = SVFIR::getPAG();
@@ -112,45 +71,30 @@ void traverseOnVFG(const SVFG* vfg, Value* val)
     Set<const VFGNode*> visited;
     worklist.push(vNode);
 
-    /// Traverse along VFG
-    while (!worklist.empty())
-    {
+    while (!worklist.empty()) {
         const VFGNode* vNode = worklist.pop();
-        for (VFGNode::const_iterator it = vNode->OutEdgeBegin(), eit =
-                    vNode->OutEdgeEnd(); it != eit; ++it)
-        {
+        for (VFGNode::const_iterator it = vNode->OutEdgeBegin(), eit = vNode->OutEdgeEnd(); it != eit; ++it) {
             VFGEdge* edge = *it;
             VFGNode* succNode = edge->getDstNode();
-            if (visited.find(succNode) == visited.end())
-            {
+            if (visited.find(succNode) == visited.end()) {
                 visited.insert(succNode);
                 worklist.push(succNode);
             }
         }
     }
-
-    /// Collect all LLVM Values
-    for(Set<const VFGNode*>::const_iterator it = visited.begin(), eit = visited.end(); it!=eit; ++it)
-    {
-        // const VFGNode* node = *it;
-        /// can only query VFGNode involving top-level pointers (starting with % or @ in LLVM IR)
-        /// PAGNode* pNode = vfg->getLHSTopLevPtr(node);
-        /// Value* val = pNode->getValue();
-    }
 }
 
-int main(int argc, char ** argv)
+int main(int argc, char** argv)
 {
 
     int arg_num = 0;
-    char **arg_value = new char*[argc];
+    char** arg_value = new char*[argc];
     std::vector<std::string> moduleNameVec;
     SVFUtil::processArguments(argc, argv, arg_num, arg_value, moduleNameVec);
     cl::ParseCommandLineOptions(arg_num, arg_value,
-                                "Whole Program Points-to Analysis\n");
-    
-    if (Options::WriteAnder == "ir_annotator")
-    {
+        "Whole Program Points-to Analysis\n");
+
+    if (Options::WriteAnder == "ir_annotator") {
         LLVMModuleSet::getLLVMModuleSet()->preProcessBCs(moduleNameVec);
     }
 
@@ -171,18 +115,143 @@ int main(int argc, char ** argv)
     /// printPts(ander, value1);
 
     /// Call Graph
-    PTACallGraph* callgraph = ander->getPTACallGraph();
+    // PTACallGraph* callgraph = ander->getPTACallGraph();
 
     /// ICFG
-    ICFG* icfg = pag->getICFG();
-    icfg->dump("icfg");
+    // ICFG* icfg = pag->getICFG();
 
     /// Value-Flow Graph (VFG)
-    VFG* vfg = new VFG(callgraph);
+    // VFG* vfg = new VFG(callgraph);
 
     /// Sparse value-flow graph (SVFG)
-    SVFGBuilder svfBuilder(true);
-    SVFG* svfg = svfBuilder.buildFullSVFG(ander);
+    // SVFGBuilder svfBuilder(true);
+    // SVFG* svfg = svfBuilder.buildFullSVFG(ander);
+
+    // cout << "\n\n\n\n\n*************HERE*************\n\n\n\n\n\n\n";
+    // FlowSensitive* fspta = new FlowSensitive(pag);
+    // fspta->analyze();
+    // cout << "\n\n\n\n\nIndirect Calls:\n\n\n\n";
+    // auto maps = fspta->getIndCallMap();
+    // for (auto itr = maps.begin(); itr != maps.end(); itr++) {
+    //     itr->first->getCallSite()->print(errs());
+    //     cout << " is an indirect call to:" << endl
+    //          << "{ ";
+    //     int n_funcs = itr->second.size();
+    //     for (auto funcs : itr->second) {
+    //         cout << funcs->getLLVMFun()->getFunction().getName().str();
+    //         n_funcs--;
+    //         if (n_funcs != 0)
+    //             cout << " OR ";
+    //     }
+    //
+    //     cout << " }" << endl
+    //          << endl
+    //          << endl;
+    // }
+    //
+    int n_indirect = 0, n_monomorphic = 0, n_polymorphic = 0, n_resolved = 0;
+    TypeAnalysis* cha = new TypeAnalysis(pag);
+    // Andersen *cha =  ander;
+    cha->analyze();
+    cout << "\n\n\n\n\nIndirect Calls using CHA:\n\n\n\n";
+    auto maps_cha = cha->getIndCallMap();
+    std::unordered_map<NodeID , int> cha_calls;
+    int comparative_n_monomorphic_cha = 0;
+    int comparative_n_polymorphic_cha = 0;
+    int comparative_n_resolved_cha = 0;
+    for (auto itr = maps_cha.begin(); itr != maps_cha.end(); itr++) {
+        n_indirect++;
+        itr->first->getCallSite()->print(errs());
+        // if(cha_calls.find(itr->first->getId()) != cha_calls.end()){
+        //     cout<<"\n\n\n!!!!!!!!!!!!!!!!!!!!REPETITION!!!!!!!!\n\n\n\n";
+        // }
+        cout << " is an indirect call to:" << endl
+             << "{ ";
+        int n_funcs = itr->second.size();
+        cha_calls[itr->first->getId()] = n_funcs;
+        n_resolved += n_funcs;
+        if (n_funcs == 1)
+            n_monomorphic++;
+        else
+            n_polymorphic++;
+        for (auto funcs : itr->second) {
+            cout << funcs->getLLVMFun()->getFunction().getName().str();
+            n_funcs--;
+            if (n_funcs != 0)
+                cout << " OR ";
+        }
+
+        cout << " }" << endl
+             << endl
+             << endl;
+    }
+    
+
+    string stats = "Stats: \n\n";
+    stats += "\n\nCHA stats:\n";
+    stats += "Total indirect calls = " + to_string(n_indirect);
+    stats += "\nTotal monomorphic calls = " + to_string(n_monomorphic);
+    stats += "\nTotal Polymorphic calls = " + to_string(n_polymorphic);
+    stats += "\nIndirect calls resolved to total " + to_string(n_resolved) + " functions.";
+
+    n_indirect = 0;
+    n_monomorphic = 0;
+    n_polymorphic = 0;
+    n_resolved = 0;
+    int comparative_n_monomorphic_vsfs = 0;
+    int comparative_n_polymorphic_vsfs = 0;
+    int comparative_n_resolved_vsfs = 0;
+    VersionedFlowSensitive* vfspta = new VersionedFlowSensitive(pag);
+    vfspta->analyze();
+    cout << "\n\n\n\n\nIndirect Calls using Versioned Flow Sensitive Analysis:\n\n\n\n";
+    auto maps_vfspta = vfspta->getIndCallMap();
+    for (auto itr = maps_vfspta.begin(); itr != maps_vfspta.end(); itr++) {
+        n_indirect++;
+        itr->first->getCallSite()->print(errs());
+        cout << " is an indirect call to:" << endl
+             << "{ ";
+        int n_funcs = itr->second.size();
+        if (cha_calls.find(itr->first->getId()) != cha_calls.end()) {
+            if(cha_calls[itr->first->getId()] == 1)
+                comparative_n_monomorphic_cha++;
+            else
+                comparative_n_polymorphic_cha++;
+            if (n_funcs == 1)
+                comparative_n_monomorphic_vsfs++;
+            else
+                comparative_n_polymorphic_vsfs++;
+            comparative_n_resolved_vsfs += n_funcs;
+            comparative_n_resolved_cha += cha_calls[itr->first->getId()];
+        }
+        n_resolved += n_funcs;
+        if (n_funcs == 1)
+            n_monomorphic++;
+        else
+            n_polymorphic++;
+        for (auto funcs : itr->second) {
+            cout << funcs->getLLVMFun()->getFunction().getName().str();
+            n_funcs--;
+            if (n_funcs != 0)
+                cout << " OR ";
+        }
+
+        cout << " }" << endl
+             << endl
+             << endl;
+    }
+    stats += "\n\nVSFS stats:\n";
+    stats += "Total indirect calls = " + to_string(n_indirect);
+    stats += "\nTotal monomorphic calls = " + to_string(n_monomorphic);
+    stats += "\nTotal Polymorphic calls = " + to_string(n_polymorphic);
+    stats += "\nIndirect calls resolved to total " + to_string(n_resolved) + " functions.";
+
+    cout << "\n\n\n\n*******************************************************\n";
+    cout << stats;
+    cout << "\n\nComparative Study(For same indirect calls):\n";
+    cout << "Monomorphic calls :\t VSFS : " << comparative_n_monomorphic_vsfs << "\t CHA : " << comparative_n_monomorphic_cha << endl;
+    cout << "Polymorphic calls :\t VSFS : " << comparative_n_polymorphic_vsfs << "\tCHA : " << comparative_n_polymorphic_cha << endl;
+    cout << "Total Resolved :   \t VSFS : " << comparative_n_resolved_vsfs << "\tCHA : " << comparative_n_resolved_cha << endl;
+    cout << "\n*******************************************************\n";
 
     /// Collect uses of an LLVM Value
     /// traverseOnVFG(svfg, value);
@@ -191,8 +260,8 @@ int main(int argc, char ** argv)
     /// traverseOnICFG(icfg, value);
 
     // clean up memory
-    delete vfg;
-    delete svfg;
+    // delete vfg;
+    // delete svfg;
     AndersenWaveDiff::releaseAndersenWaveDiff();
     SVFIR::releaseSVFIR();
 
@@ -202,4 +271,3 @@ int main(int argc, char ** argv)
     llvm::llvm_shutdown();
     return 0;
 }
-

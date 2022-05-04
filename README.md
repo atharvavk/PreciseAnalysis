@@ -1,50 +1,32 @@
-## News
-* <b>SVF now supports LLVM-13.0.0 (Thank [Shengjie Xu](https://github.com/xushengj) for his help!). </b>
-* <b>[Object clustering](https://github.com/SVF-tools/SVF/wiki/Object-Clustering) published in our [OOPSLA paper](https://yuleisui.github.io/publications/oopsla21.pdf) is now available in SVF </b>
-* <b>[Hash-Consed Points-To Sets](https://github.com/SVF-tools/SVF/wiki/Hash-Consed-Points-To-Sets) published in our [SAS paper](https://yuleisui.github.io/publications/sas21.pdf) is now available in SVF </b>
-* <b> Learning or teaching Software Analysis? Check out [SVF-Teaching](https://github.com/SVF-tools/SVF-Teaching)! </b>
-* <b>SVF now supports LLVM-12.0.0 (Thank [Xiyu Yang](https://github.com/sherlly/) for her help!). </b>
-* <b>[VSFS](https://github.com/SVF-tools/SVF/wiki/VSFS) published in our [CGO paper](https://yuleisui.github.io/publications/cgo21.pdf) is now available in SVF </b>
-* <b>[TypeClone](https://github.com/SVF-tools/SVF/wiki/TypeClone) published in our [ECOOP paper](https://yuleisui.github.io/publications/ecoop20.pdf) is now available in SVF </b>
-* <b>SVF now uses a single script for its build. Just type [`source ./build.sh`](https://github.com/SVF-tools/SVF/blob/master/build.sh) in your terminal, that's it!</b>
-* <b>SVF now supports LLVM-10.0.0! </b>
-* <b>We thank [bsauce](https://github.com/bsauce) for writing a user manual of SVF ([link1](https://www.jianshu.com/p/068a08ec749c) and [link2](https://www.jianshu.com/p/777c30d4240e)) in Chinese </b>
-* <b>SVF now supports LLVM-9.0.0 (Thank [Byoungyoung Lee](https://github.com/SVF-tools/SVF/issues/142) for his help!). </b>
-* <b>SVF now supports a set of [field-sensitive pointer analyses](https://yuleisui.github.io/publications/sas2019a.pdf). </b>
-* <b>[Use SVF as an external lib](https://github.com/SVF-tools/SVF/wiki/Using-SVF-as-a-lib-in-your-own-tool) for your own project (Contributed by [Hongxu Chen](https://github.com/HongxuChen)). </b>
-* <b>SVF now supports LLVM-7.0.0. </b>
-* <b>SVF now supports Docker. [Try SVF in Docker](https://github.com/SVF-tools/SVF/wiki/Try-SVF-in-Docker)! </b>
-* <b>SVF now supports [LLVM-6.0.0](https://github.com/svf-tools/SVF/pull/38) (Contributed by [Jack Anthony](https://github.com/jackanth)). </b>
-* <b>SVF now supports [LLVM-4.0.0](https://github.com/svf-tools/SVF/pull/23) (Contributed by Jared Carlson. Thank [Jared](https://github.com/jcarlson23) and [Will](https://github.com/dtzWill) for their in-depth [discussions](https://github.com/svf-tools/SVF/pull/18) about updating SVF!) </b>
-* <b>SVF now supports analysis for C++ programs.</b>
-<br />
+<h1>Running Instructions:</h1>
+(This setup was done for arch linux)<br/>
+LLVM setup is pre-requisite for this application<br>
+Set LLVM_HOME and LLVM_DIR paths in your repository as:<br>
 
-## Documentation
+export LLVM_HOME=/usr/lib/<br>
+export LLVM_DIR=/usr/include/llvm<br>
+<br>
+(Z3 package needs to be installed globally)
+<br>
+Execute <br>
+./build.sh<br>
+<br>
+Execute<br>
+cmake<br>
+make<br>
+<br>
+Whole process will take about 30 min to compile.<br>
+After that include and lib folders need to be moved to global include and lib sections<br>
+cp -r include/\* /usr/local/include/<br>
+cp -r lib/\* /usr/local/lib<br>
+<br>
+After any changes in tools/Example execute make.<br>
 
-If you want to build the documentation yourself go into doc and invoke doxygen:
-```
-cd doc && doxygen doxygen.config
-```
-
-#### We are looking for self-motivated PhD students and we welcome industry collaboration/sponsorship to improve SVF (Please contact yulei.sui@uts.edu.au if you are interested)
-
-
-<br />
-<br />
-<br />
-SVF is a source code analysis tool that enables interprocedural dependence analysis for LLVM-based languages. SVF is able to perform pointer alias analysis, memory SSA form construction, value-flow tracking for program variables and memory error checking. 
-<br />
-<br />
-
-| About SVF       | Setup  Guide         | User Guide  | Developer Guide  |
-| ------------- |:-------------:| -----:|-----:|
-| ![About](https://github.com/svf-tools/SVF/blob/master/images/help.png?raw=true)| ![Setup](https://github.com/svf-tools/SVF/blob/master/images/tools.png?raw=true)  | ![User](https://github.com/svf-tools/SVF/blob/master/images/users.png?raw=true)  |  ![Developer](https://github.com/svf-tools/SVF/blob/master/images/database.png?raw=true) 
-| Introducing SVF -- [what it does](https://github.com/svf-tools/SVF/wiki/About#what-is-svf) and [how we design it](https://github.com/svf-tools/SVF/wiki/SVF-Design#svf-design)      | A step by step [setup guide](https://github.com/svf-tools/SVF/wiki/Setup-Guide#getting-started) to build SVF | Command-line options to [run SVF](https://github.com/svf-tools/SVF/wiki/User-Guide#quick-start), get [analysis outputs](https://github.com/svf-tools/SVF/wiki/User-Guide#analysis-outputs), and test SVF with [an example](https://github.com/svf-tools/SVF/wiki/Analyze-a-Simple-C-Program) or [PTABen](https://github.com/SVF-tools/PTABen) | Detailed [technical documentation](https://github.com/svf-tools/SVF/wiki/Technical-documentation) and how to [write your own analyses](https://github.com/svf-tools/SVF/wiki/Write-your-own-analysis-in-SVF) in SVF or [use SVF as a lib](https://github.com/SVF-tools/SVF-example) for your tool  |
-
-
-<br />
-<br />
-<p>We release SVF source code in the hope of benefiting others. You are kindly asked to acknowledge usage of the tool by citing some of our publications listed http://svf-tools.github.io/SVF, especially the following two: </p>
+<br>
+To compare CHA and SFS result:<br>
+execute:<br>
+bin/svf-ex /path/to/bitcode/file<br>
+<h2>Citations:</h2> 
 
 ```
 @inproceedings{sui2016svf,
